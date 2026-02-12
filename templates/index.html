@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Data Fetcher Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-smart {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-smart:hover {
+            background: #059669;
+        }
+
+        .btn-full {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-full:hover {
+            background: #2563eb;
+        }
+
+        .btn-export {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #7c3aed;
+        }
+
+        .btn-refresh {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background: #d97706;
+        }
+
+        .btn-clear-filters {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-clear-filters:hover {
+            background: #dc2626;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card p {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .progress-section {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        #status {
+            font-size: 1.1em;
+            color: #4b5563;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .progress-bar-container {
+            background: #e5e7eb;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .search-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table-section {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: #f3f4f6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .th-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .filter-icon {
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .filter-icon:hover {
+            background: #e5e7eb;
+        }
+
+        .filter-icon.active {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+            min-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .filter-dropdown.show {
+            display: block;
+        }
+
+        .filter-search {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-options {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .filter-option {
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .filter-option:hover {
+            background: #f3f4f6;
+        }
+
+        .filter-option input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .filter-btn:hover {
+            background: #f3f4f6;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #4b5563;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-hosteller {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-commuter {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .last-updated {
+            text-align: center;
+            padding: 15px;
+            color: #6b7280;
+            font-size: 0.9em;
+            background: #f9fafb;
+        }
+
+        .active-filters {
+            padding: 10px 30px;
+            background: #fef3c7;
+            border-bottom: 1px solid #fbbf24;
+            display: none;
+        }
+
+        .active-filters.show {
+            display: block;
+        }
+
+        .filter-tag {
+            display: inline-block;
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin: 4px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th,
+            td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Student Data Fetcher</h1>
+            <p>Fetch and manage student elective choice data</p>
+        </div>
+
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn-smart" onclick="startFetch('smart')">
+                    ⚡ Smart Fetch
+                </button>
+                <button class="btn-full" onclick="startFetch('full')">
+                    🔄 Full Fetch
+                </button>
+                <button class="btn-export" onclick="exportData()">
+                    📥 Export CSV
+                </button>
+                <button class="btn-refresh" onclick="loadData()">
+                    🔃 Refresh Data
+                </button>
+                <button class="btn-clear-filters" onclick="clearAllFilters()">
+                    🗑️ Clear Filters
+                </button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Total Found</h3>
+                    <p id="stat-found">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Excluded</h3>
+                    <p id="stat-excluded">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Not Checked</h3>
+                    <p id="stat-unchecked">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Showing</h3>
+                    <p id="stat-showing">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-section" id="progress-section" style="display: none;">
+            <h3 id="status">Ready</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
+            </div>
+        </div>
+
+        <div class="active-filters" id="active-filters"></div>
+
+        <div class="search-section">
+            <input type="text" class="search-box" id="search" placeholder="🔍 Search by enrollment, name, or branch...">
+        </div>
+
+        <div class="table-section">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading data...</p>
+            </div>
+
+            <div class="empty-state" id="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4">
+                    </path>
+                </svg>
+                <h3>No Data Available</h3>
+                <p>Click "Smart Fetch" or "Full Fetch" to load student data</p>
+            </div>
+
+            <table id="data-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th>
+                            <div class="th-content">
+                                <span>Enrollment No.</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'enrollment')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-enrollment"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Name</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'name')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-name"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Branch</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'branch')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-branch"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Status</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'status')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-status"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Form Status</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'form')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-form"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Choice 1</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'choice1')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-choice1"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Choice 2</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'choice2')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-choice2"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Choice 3</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'choice3')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-choice3"></div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Choice 4</span>
+                                <span class="filter-icon" onclick="toggleFilter(event, 'choice4')">▼</span>
+                            </div>
+                            <div class="filter-dropdown" id="filter-choice4"></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="last-updated" id="last-updated"></div>
+    </div>
+
+    <script>
+        let allData = [];
+        let isPolling = false;
+        let columnFilters = {
+            enrollment: new Set(),
+            name: new Set(),
+            branch: new Set(),
+            status: new Set(),
+            form: new Set(),
+            choice1: new Set(),
+            choice2: new Set(),
+            choice3: new Set(),
+            choice4: new Set()
+        };
+
+        // Close dropdowns when clicking outside
+        $(document).click(function (e) {
+            if (!$(e.target).closest('th').length) {
+                $('.filter-dropdown').removeClass('show');
+            }
+        });
+
+        // Toggle filter dropdown
+        function toggleFilter(event, column) {
+            event.stopPropagation();
+            const dropdown = $(`#filter-${column}`);
+            const wasVisible = dropdown.hasClass('show');
+
+            $('.filter-dropdown').removeClass('show');
+
+            if (!wasVisible) {
+                buildFilterDropdown(column);
+                dropdown.addClass('show');
+            }
+        }
+
+        // Build filter dropdown content
+        function buildFilterDropdown(column) {
+            const dropdown = $(`#filter-${column}`);
+            const values = getUniqueValues(column);
+
+            let html = `
+                <input type="text" class="filter-search" placeholder="Search..." onkeyup="filterDropdownOptions(event, '${column}')">
+                <div class="filter-options" id="filter-options-${column}">
+            `;
+
+            values.forEach(value => {
+                const checked = columnFilters[column].has(value) ? 'checked' : '';
+                html += `
+                    <div class="filter-option" data-value="${value}">
+                        <input type="checkbox" ${checked} onchange="updateColumnFilter('${column}', '${value}', this.checked)">
+                        <span>${value}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-btn" onclick="selectAllInColumn('${column}')">Select All</button>
+                    <button class="filter-btn" onclick="clearColumnFilter('${column}')">Clear</button>
+                </div>
+            `;
+
+            dropdown.html(html);
+        }
+
+        // Filter dropdown options based on search
+        function filterDropdownOptions(event, column) {
+            const searchTerm = event.target.value.toLowerCase();
+            const options = $(`#filter-options-${column} .filter-option`);
+
+            options.each(function () {
+                const text = $(this).find('span').text().toLowerCase();
+                $(this).toggle(text.includes(searchTerm));
+            });
+        }
+
+        // Get unique values for a column
+        function getUniqueValues(column) {
+            const values = new Set();
+
+            allData.forEach(student => {
+                let value;
+                switch (column) {
+                    case 'enrollment':
+                        value = student["Enrollment No."] || student["ENROLLMENT NO"] || "-";
+                        break;
+                    case 'name':
+                        value = student["Name of Student"] || "-";
+                        break;
+                    case 'branch':
+                        value = student["Branch"] || "-";
+                        break;
+                    case 'status':
+                        value = student["6th Sem Status"] || "-";
+                        break;
+                    case 'form':
+                        value = student["Form Submitted"] || "-";
+                        break;
+                    case 'choice1':
+                        value = student["Elective-3 Choice-1"] || "-";
+                        break;
+                    case 'choice2':
+                        value = student["Elective-3 Choice-2"] || "-";
+                        break;
+                    case 'choice3':
+                        value = student["Elective-3 Choice-3"] || "-";
+                        break;
+                    case 'choice4':
+                        value = student["Elective-3 Choice-4"] || "-";
+                        break;
+                }
+                values.add(value);
+            });
+
+            return Array.from(values).sort();
+        }
+
+        // Update column filter
+        function updateColumnFilter(column, value, checked) {
+            if (checked) {
+                columnFilters[column].add(value);
+            } else {
+                columnFilters[column].delete(value);
+            }
+
+            updateFilterIcon(column);
+            applyFilters();
+        }
+
+        // Select all in column
+        function selectAllInColumn(column) {
+            const values = getUniqueValues(column);
+            columnFilters[column] = new Set(values);
+            buildFilterDropdown(column);
+            updateFilterIcon(column);
+            applyFilters();
+        }
+
+        // Clear column filter
+        function clearColumnFilter(column) {
+            columnFilters[column].clear();
+            buildFilterDropdown(column);
+            updateFilterIcon(column);
+            applyFilters();
+        }
+
+        // Clear all filters
+        function clearAllFilters() {
+            Object.keys(columnFilters).forEach(column => {
+                columnFilters[column].clear();
+                updateFilterIcon(column);
+            });
+            $('.filter-dropdown').removeClass('show');
+            applyFilters();
+        }
+
+        // Update filter icon appearance
+        function updateFilterIcon(column) {
+            const icon = $(`#filter-${column}`).prev().find('.filter-icon');
+            if (columnFilters[column].size > 0) {
+                icon.addClass('active');
+            } else {
+                icon.removeClass('active');
+            }
+        }
+
+        // Apply all filters
+        function applyFilters() {
+            const searchTerm = $("#search").val().toLowerCase();
+
+            const filtered = allData.filter(student => {
+                // Apply column filters
+                for (let column in columnFilters) {
+                    if (columnFilters[column].size > 0) {
+                        let value;
+                        switch (column) {
+                            case 'enrollment':
+                                value = student["Enrollment No."] || student["ENROLLMENT NO"] || "-";
+                                break;
+                            case 'name':
+                                value = student["Name of Student"] || "-";
+                                break;
+                            case 'branch':
+                                value = student["Branch"] || "-";
+                                break;
+                            case 'status':
+                                value = student["6th Sem Status"] || "-";
+                                break;
+                            case 'form':
+                                value = student["Form Submitted"] || "-";
+                                break;
+                            case 'choice1':
+                                value = student["Elective-3 Choice-1"] || "-";
+                                break;
+                            case 'choice2':
+                                value = student["Elective-3 Choice-2"] || "-";
+                                break;
+                            case 'choice3':
+                                value = student["Elective-3 Choice-3"] || "-";
+                                break;
+                            case 'choice4':
+                                value = student["Elective-3 Choice-4"] || "-";
+                                break;
+                        }
+
+                        if (!columnFilters[column].has(value)) {
+                            return false;
+                        }
+                    }
+                }
+
+                // Apply search filter
+                if (searchTerm !== "") {
+                    const enrollment = (student["Enrollment No."] || student["ENROLLMENT NO"] || "").toString().toLowerCase();
+                    const name = (student["Name of Student"] || "").toLowerCase();
+                    const branch = (student["Branch"] || "").toLowerCase();
+
+                    if (!enrollment.includes(searchTerm) &&
+                        !name.includes(searchTerm) &&
+                        !branch.includes(searchTerm)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            displayData(filtered);
+            updateActiveFilters();
+            $("#stat-showing").text(filtered.length);
+        }
+
+        // Update active filters display
+        function updateActiveFilters() {
+            const activeFiltersDiv = $("#active-filters");
+            let hasFilters = false;
+            let html = '<strong>Active Filters:</strong> ';
+
+            for (let column in columnFilters) {
+                if (columnFilters[column].size > 0) {
+                    hasFilters = true;
+                    const columnName = column.charAt(0).toUpperCase() + column.slice(1);
+                    html += `<span class="filter-tag">${columnName}: ${columnFilters[column].size} selected</span>`;
+                }
+            }
+
+            if (hasFilters) {
+                activeFiltersDiv.html(html).addClass('show');
+            } else {
+                activeFiltersDiv.removeClass('show');
+            }
+        }
+
+        // Start fetch operation
+        function startFetch(mode) {
+            let pass = prompt("Enter Passkey:");
+            if (!pass) return;
+
+            $.ajax({
+                url: "/start_fetch",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    passkey: pass,
+                    mode: mode
+                }),
+                success: function (response) {
+                    $("#progress-section").show();
+                    startPolling();
+                },
+                error: function (xhr) {
+                    let errorMsg = "Failed to start fetch";
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    alert("Error: " + errorMsg);
+                }
+            });
+        }
+
+        // Start polling for progress
+        function startPolling() {
+            if (isPolling) return;
+            isPolling = true;
+            updateProgress();
+        }
+
+        // Update progress
+        function updateProgress() {
+            $.getJSON("/progress", function (p) {
+                if (!p.total) {
+                    if (isPolling) {
+                        setTimeout(updateProgress, 1000);
+                    }
+                    return;
+                }
+
+                let percent = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
+                $("#progress-bar").css("width", percent + "%").text(percent + "%");
+                $("#status").text(`Processing: ${p.done}/${p.total} | Found: ${p.found} | Excluded: ${p.excluded}`);
+
+                if (p.running) {
+                    setTimeout(updateProgress, 1000);
+                } else {
+                    isPolling = false;
+                    $("#status").text(`✅ Completed: ${p.found} found, ${p.excluded} permanently excluded`);
+                    loadData();
+                }
+            }).fail(function () {
+                if (isPolling) {
+                    setTimeout(updateProgress, 1000);
+                }
+            });
+        }
+
+        // Load data from server
+        function loadData() {
+            $("#loading").show();
+            $("#empty-state").hide();
+            $("#data-table").hide();
+
+            $.getJSON("/data", function (response) {
+                allData = Object.values(response.records || {});
+
+                // Update stats
+                const stats = response.stats || {};
+                $("#stat-found").text(stats.total_found || 0);
+                $("#stat-excluded").text(stats.total_excluded || 0);
+                $("#stat-unchecked").text(stats.not_checked || 0);
+
+                applyFilters();
+                $("#loading").hide();
+
+                if (allData.length === 0) {
+                    $("#empty-state").show();
+                } else {
+                    $("#data-table").show();
+                }
+            }).fail(function () {
+                $("#loading").hide();
+                $("#empty-state").show();
+                alert("Failed to load data");
+            });
+        }
+
+        // Display data in table
+        function displayData(data) {
+            const tbody = $("#table-body");
+            tbody.empty();
+
+            if (data.length === 0) {
+                return;
+            }
+
+            data.forEach(function (student, index) {
+                const formStatus = student["Form Submitted"] === "SUBMITTED" ?
+                    '<span class="badge badge-success">Submitted</span>' :
+                    '<span class="badge badge-warning">Not Submitted</span>';
+
+                const semStatus = student["6th Sem Status"] === "Hosteller" ?
+                    '<span class="badge badge-hosteller">Hosteller</span>' :
+                    '<span class="badge badge-commuter">Commuter</span>';
+
+                const row = `
+                    <tr>
+                        <td style="font-weight: 600; color: #6b7280;">${index + 1}</td>
+                        <td>${student["Enrollment No."] || student["ENROLLMENT NO"] || "-"}</td>
+                        <td>${student["Name of Student"] || "-"}</td>
+                        <td>${student["Branch"] || "-"}</td>
+                        <td>${semStatus}</td>
+                        <td>${formStatus}</td>
+                        <td>${student["Elective-3 Choice-1"] || "-"}</td>
+                        <td>${student["Elective-3 Choice-2"] || "-"}</td>
+                        <td>${student["Elective-3 Choice-3"] || "-"}</td>
+                        <td>${student["Elective-3 Choice-4"] || "-"}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        // Search functionality
+        $("#search").on("keyup", function () {
+            applyFilters();
+        });
+
+        // Export data
+        function exportData() {
+            window.location.href = "/export";
+        }
+
+        // Load data on page load
+        $(document).ready(function () {
+            loadData();
+        });
+    </script>
+</body>
+
+</html>
