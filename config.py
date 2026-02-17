@@ -24,4 +24,6 @@ REQUEST_TIMEOUT = 10
 # File paths
 DATA_FILE = "data.json"
 EXCLUSIONS_FILE = "permanent_exclusions.json"
+SHEET_CONFIG_FILE = "sheet_config.json"
 LOG_FILE = "fetch.log"
+

@@ -3,7 +3,7 @@ import requests, time, json, threading, os, csv, logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.exceptions import RequestException, ConnectionError
 from datetime import datetime
-from io import StringIO
+from io import StringIO, BytesIO
 from dotenv import load_dotenv
 import config
 
@@ -51,19 +51,24 @@ ENROLLMENTS = generate_enrollments()
 
 # ---- Load/Save Functions ----
 def load_data():
-    """Load existing student data"""
+    """Load student data from JSON file"""
     if os.path.exists(config.DATA_FILE):
         try:
             with open(config.DATA_FILE, "r") as f:
                 data = json.load(f)
-                # Handle old format (just records) vs new format (with metadata)
+                # Always return the full structure with wrapper
                 if isinstance(data, dict) and "records" in data:
-                    return data["records"]
-                return data
+                    return data  # Return the full wrapper
+                # If old format (just records), wrap it
+                return {
+                    "last_updated": datetime.now().isoformat(),
+                    "total_records": len(data) if isinstance(data, dict) else 0,
+                    "records": data if isinstance(data, dict) else {}
+                }
         except json.JSONDecodeError:
             logger.error(f"Error reading {config.DATA_FILE}, starting fresh")
-            return {}
-    return {}
+            return {"records": {}, "total_records": 0, "last_updated": datetime.now().isoformat()}
+    return {"records": {}, "total_records": 0, "last_updated": datetime.now().isoformat()}
 
 
 def save_data(data):
@@ -92,6 +97,63 @@ def load_exclusions():
     return set()
 
 
+def load_sheet_config():
+    """Load sheet configuration from JSON file"""
+    if os.path.exists(config.SHEET_CONFIG_FILE):
+        try:
+            with open(config.SHEET_CONFIG_FILE, "r") as f:
+                sheet_config = json.load(f)
+                logger.info(f"Loaded sheet config: {sheet_config['sheet_name']}")
+                return sheet_config
+        except json.JSONDecodeError:
+            logger.error(f"Error reading {config.SHEET_CONFIG_FILE}, using defaults")
+    
+    # Default configuration
+    default_config = {
+        "sheet_id": "1VSQmA2hwJaw5jR-EwnuffttOIQpOPRUu06rlIS9Qqmk",
+        "sheet_name": "7thSemElectiveChoice",
+        "sheet_user_index": 1
+    }
+    save_sheet_config(default_config)
+    return default_config
+
+
+def save_sheet_config(config_data):
+    """Save sheet configuration to JSON file"""
+    with open(config.SHEET_CONFIG_FILE, "w") as f:
+        json.dump(config_data, f, indent=2)
+    logger.info(f"Saved sheet config: {config_data['sheet_name']}")
+
+
+def get_dynamic_columns(data):
+    """Extract unique column names from data"""
+    columns = set()
+    for record in data.values():
+        columns.update(record.keys())
+    return sorted(list(columns))
+
+
+def normalize_records(records):
+    """Ensure all records have all columns (fill missing with empty string)"""
+    if not records:
+        return records
+    
+    # Get all unique columns across all records
+    all_columns = set()
+    for record in records.values():
+        all_columns.update(record.keys())
+    
+    # Normalize each record to have all columns
+    normalized = {}
+    for enrollment, record in records.items():
+        normalized_record = {}
+        for column in sorted(all_columns):
+            normalized_record[column] = record.get(column, "")
+        normalized[enrollment] = normalized_record
+    
+    return normalized
+
+
 # ---- Fetch Single Enrollment (with retry) ----
 def fetch_student_data(enrollment, retries=None, backoff_factor=None):
     """Fetch data for a single enrollment with retry logic"""
@@ -99,8 +161,14 @@ def fetch_student_data(enrollment, retries=None, backoff_factor=None):
         retries = config.MAX_RETRIES
     if backoff_factor is None:
         backoff_factor = config.BACKOFF_FACTOR
+    
+    # Load dynamic sheet configuration
+    sheet_config = load_sheet_config()
+    sheet_id = sheet_config.get("sheet_id")
+    sheet_name = sheet_config.get("sheet_name")
+    sheet_user_index = sheet_config.get("sheet_user_index", 1)
         
-    url = f"{API}?spreadsheet=a&action=get&id=1VSQmA2hwJaw5jR-EwnuffttOIQpOPRUu06rlIS9Qqmk&sheet=7thSemElectiveChoice&sheetuser={enrollment}&sheetuserIndex=1"
+    url = f"{API}?spreadsheet=a&action=get&id={sheet_id}&sheet={sheet_name}&sheetuser={enrollment}&sheetuserIndex={sheet_user_index}"
 
     attempt = 0
     while attempt < retries:
@@ -135,7 +203,8 @@ def run_fetch(mode):
     """Main fetch function with parallel processing"""
     global progress
 
-    existing_data = load_data()
+    existing_data_wrapper = load_data()
+    existing_data = existing_data_wrapper.get("records", {})
     exclusions = load_exclusions()
 
     # Determine which enrollments to fetch
@@ -249,19 +318,38 @@ def get_progress():
 
 @app.route("/data")
 def get_data():
-    """Get all fetched data"""
-    data = load_data()
-    exclusions = load_exclusions()
-    
-    return jsonify({
-        "records": data,
-        "stats": {
-            "total_found": len(data),
-            "total_excluded": len(exclusions),
-            "total_enrollments": len(ENROLLMENTS),
-            "not_checked": len(ENROLLMENTS) - len(data) - len(exclusions)
-        }
-    })
+    """Get all fetched data with normalization"""
+    try:
+        data_wrapper = load_data()
+        
+        # Normalize records to ensure all have all columns
+        normalized_records = normalize_records(data_wrapper.get("records", {}))
+        
+        # Calculate stats
+        total_found = len(normalized_records)
+        exclusions = load_exclusions()
+        total_excluded = len(exclusions)
+        
+        # Calculate not checked
+        # Assuming ENROLLMENT_RANGES contains tuples like (start, end)
+        total_possible_enrollments = 0
+        for start, end in config.ENROLLMENT_RANGES:
+            total_possible_enrollments += (int(end) - int(start) + 1)
+
+        not_checked = total_possible_enrollments - total_found - total_excluded
+        
+        return jsonify({
+            "records": normalized_records,
+            "stats": {
+                "total_found": total_found,
+                "total_excluded": total_excluded,
+                "not_checked": not_checked,
+                "total_enrollments": total_possible_enrollments
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting data: {str(e)}")
+        return jsonify({"error": "Failed to load data"}), 500
 
 
 @app.route("/exclusions")
@@ -276,46 +364,142 @@ def get_exclusions():
 
 @app.route("/export")
 def export_data():
-    """Export data as CSV"""
+    """Export data as CSV with normalized records"""
     try:
-        data = load_data()
+        data_wrapper = load_data()
+        data = data_wrapper.get("records", {})
         
         if not data:
             return jsonify({"error": "No data to export"}), 400
         
-        # Create CSV in memory
-        output = StringIO()
+        # Normalize records to ensure all have all columns
+        normalized_data = normalize_records(data)
         
-        # Get all unique field names
+        if not normalized_data:
+            return jsonify({"error": "No data to export"}), 400
+        
+        # Create CSV in memory
+        string_output = StringIO()
+        
+        # Get all unique field names from normalized data
         all_fields = set()
-        for record in data.values():
+        for record in normalized_data.values():
             all_fields.update(record.keys())
         
         fieldnames = sorted(list(all_fields))
         
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer = csv.DictWriter(string_output, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         
-        for enrollment, record in sorted(data.items()):
-            writer.writerow(record)
+        # Write all records
+        for enrollment, record in sorted(normalized_data.items()):
+            # Ensure all fields are present
+            row = {field: record.get(field, "") for field in fieldnames}
+            writer.writerow(row)
         
-        # Create response
-        output.seek(0)
+        # Convert to BytesIO for send_file
+        byte_output = BytesIO()
+        byte_output.write(string_output.getvalue().encode('utf-8'))
+        byte_output.seek(0)
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"student_data_{timestamp}.csv"
         
-        logger.info(f"Exporting {len(data)} records to CSV")
+        logger.info(f"Exporting {len(normalized_data)} records to CSV with {len(fieldnames)} columns")
         
         return send_file(
-            StringIO(output.getvalue()),
+            byte_output,
             mimetype='text/csv',
             as_attachment=True,
             download_name=filename
         )
         
     except Exception as e:
-        logger.error(f"Error exporting data: {str(e)}")
-        return jsonify({"error": "Export failed"}), 500
+        logger.error(f"Error exporting data: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Export failed: {str(e)}"}), 500
+
+
+@app.route("/sheet_config")
+def get_sheet_config():
+    """Get current sheet configuration"""
+    try:
+        sheet_config = load_sheet_config()
+        return jsonify(sheet_config)
+    except Exception as e:
+        logger.error(f"Error getting sheet config: {str(e)}")
+        return jsonify({"error": "Failed to load configuration"}), 500
+
+
+@app.route("/update_sheet_config", methods=["POST"])
+def update_sheet_config():
+    """Update sheet configuration (password-protected)"""
+    try:
+        data = request.json
+        
+        # Input validation
+        if not data:
+            logger.warning("Config update request with no data")
+            return jsonify({"error": "Request body required"}), 400
+            
+        if "passkey" not in data:
+            logger.warning("Config update request with missing passkey")
+            return jsonify({"error": "Passkey required"}), 400
+            
+        if "sheet_id" not in data or "sheet_name" not in data:
+            logger.warning("Config update request with missing fields")
+            return jsonify({"error": "Sheet ID and Sheet Name required"}), 400
+
+        key = data.get("passkey")
+        
+        # Validate passkey
+        if key != PASSKEY:
+            logger.warning(f"Invalid passkey attempt for config update")
+            return jsonify({"error": "Invalid passkey"}), 403
+
+        # Update configuration
+        new_config = {
+            "sheet_id": data.get("sheet_id"),
+            "sheet_name": data.get("sheet_name"),
+            "sheet_user_index": data.get("sheet_user_index", 1)
+        }
+        
+        save_sheet_config(new_config)
+        logger.info(f"Sheet configuration updated: {new_config['sheet_name']}")
+        
+        return jsonify({
+            "status": "success",
+            "message": "Configuration updated successfully",
+            "config": new_config
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating sheet config: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/columns")
+def get_columns():
+    """Get dynamic column structure from current data"""
+    try:
+        data_wrapper = load_data()
+        data = data_wrapper.get("records", {})
+        
+        if not data:
+            return jsonify({
+                "columns": [],
+                "count": 0
+            })
+        
+        columns = get_dynamic_columns(data)
+        
+        return jsonify({
+            "columns": columns,
+            "count": len(columns)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting columns: {str(e)}")
+        return jsonify({"error": "Failed to get columns"}), 500
 
 
 @app.route("/")

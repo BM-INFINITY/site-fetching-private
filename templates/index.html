@@ -434,6 +434,119 @@
             font-size: 13px;
         }
 
+
+        .config-section {
+            padding: 20px 30px;
+            background: #f0f9ff;
+            border-bottom: 1px solid #bae6fd;
+        }
+
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .config-header h3 {
+            color: #0369a1;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-toggle {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .config-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .config-content {
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .config-content.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .config-field label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9em;
+        }
+
+        .config-field input {
+            padding: 10px 15px;
+            border: 2px solid #bae6fd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .config-field input:focus {
+            outline: none;
+            border-color: #0284c7;
+        }
+
+        .btn-save-config {
+            background: #0284c7;
+            color: white;
+        }
+
+        .btn-save-config:hover {
+            background: #0369a1;
+        }
+
+        .config-message {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .config-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .config-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -455,6 +568,10 @@
             th,
             td {
                 padding: 10px;
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -510,6 +627,33 @@
             <h3 id="status">Ready</h3>
             <div class="progress-bar-container">
                 <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <div class="config-header" onclick="toggleConfigSection()">
+                <h3>⚙️ Sheet Configuration</h3>
+                <span class="config-toggle" id="config-toggle">▼</span>
+            </div>
+            <div class="config-content" id="config-content">
+                <div class="config-grid">
+                    <div class="config-field">
+                        <label for="sheet-id">Sheet ID</label>
+                        <input type="text" id="sheet-id" placeholder="Enter Google Sheet ID">
+                    </div>
+                    <div class="config-field">
+                        <label for="sheet-name">Sheet Name</label>
+                        <input type="text" id="sheet-name" placeholder="Enter Sheet Name/Tab">
+                    </div>
+                    <div class="config-field">
+                        <label for="config-passkey">Passkey</label>
+                        <input type="password" id="config-passkey" placeholder="Enter passkey to save">
+                    </div>
+                </div>
+                <button class="btn-save-config" onclick="saveSheetConfig()">
+                    💾 Save Configuration
+                </button>
+                <div class="config-message" id="config-message"></div>
             </div>
         </div>
 
@@ -615,17 +759,83 @@
     <script>
         let allData = [];
         let isPolling = false;
-        let columnFilters = {
-            enrollment: new Set(),
-            name: new Set(),
-            branch: new Set(),
-            status: new Set(),
-            form: new Set(),
-            choice1: new Set(),
-            choice2: new Set(),
-            choice3: new Set(),
-            choice4: new Set()
-        };
+        let columnOrder = []; // Store column order globally
+        let columnFilters = {};
+        let sortState = { column: null, direction: 'asc' }; // Track sort state
+
+        // ---- Sheet Configuration Functions ----
+        function toggleConfigSection() {
+            const content = $('#config-content');
+            const toggle = $('#config-toggle');
+
+            content.toggleClass('show');
+            toggle.toggleClass('open');
+        }
+
+        function loadSheetConfig() {
+            $.get('/sheet_config', function (config) {
+                $('#sheet-id').val(config.sheet_id || '');
+                $('#sheet-name').val(config.sheet_name || '');
+            }).fail(function () {
+                console.error('Failed to load sheet configuration');
+            });
+        }
+
+        function saveSheetConfig() {
+            const sheetId = $('#sheet-id').val().trim();
+            const sheetName = $('#sheet-name').val().trim();
+            const passkey = $('#config-passkey').val();
+            const messageDiv = $('#config-message');
+
+            // Validation
+            if (!sheetId || !sheetName) {
+                showConfigMessage('Please fill in both Sheet ID and Sheet Name', 'error');
+                return;
+            }
+
+            if (!passkey) {
+                showConfigMessage('Passkey is required to save configuration', 'error');
+                return;
+            }
+
+            // Send update request
+            $.ajax({
+                url: '/update_sheet_config',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    sheet_id: sheetId,
+                    sheet_name: sheetName,
+                    passkey: passkey
+                }),
+                success: function (response) {
+                    showConfigMessage('Configuration saved successfully!', 'success');
+                    $('#config-passkey').val(''); // Clear passkey
+
+                    // Reload data with new configuration
+                    setTimeout(function () {
+                        loadData();
+                    }, 1000);
+                },
+                error: function (xhr) {
+                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Failed to save configuration';
+                    showConfigMessage(error, 'error');
+                }
+            });
+        }
+
+        function showConfigMessage(message, type) {
+            const messageDiv = $('#config-message');
+            messageDiv.text(message);
+            messageDiv.removeClass('success error');
+            messageDiv.addClass(type);
+            messageDiv.show();
+
+            setTimeout(function () {
+                messageDiv.fadeOut();
+            }, 5000);
+        }
+
 
         // Close dropdowns when clicking outside
         $(document).click(function (e) {
@@ -648,21 +858,24 @@
             }
         }
 
-        // Build filter dropdown content
-        function buildFilterDropdown(column) {
-            const dropdown = $(`#filter-${column}`);
-            const values = getUniqueValues(column);
+        // Build filter dropdown content (dynamic version)
+        function buildFilterDropdown(columnId) {
+            const dropdown = $(`#filter-${columnId}`);
+            const values = getUniqueValues(columnId);
+
+            if (!columnFilters[columnId]) return;
 
             let html = `
-                <input type="text" class="filter-search" placeholder="Search..." onkeyup="filterDropdownOptions(event, '${column}')">
-                <div class="filter-options" id="filter-options-${column}">
+                <input type="text" class="filter-search" placeholder="Search..." onkeyup="filterDropdownOptions(event, '${columnId}')">
+                <div class="filter-options" id="filter-options-${columnId}">
             `;
 
             values.forEach(value => {
-                const checked = columnFilters[column].has(value) ? 'checked' : '';
+                const checked = columnFilters[columnId].values.has(value) ? 'checked' : '';
+                const escapedValue = value.replace(/'/g, "\\'");
                 html += `
                     <div class="filter-option" data-value="${value}">
-                        <input type="checkbox" ${checked} onchange="updateColumnFilter('${column}', '${value}', this.checked)">
+                        <input type="checkbox" ${checked} onchange="updateColumnFilter('${columnId}', '${escapedValue}', this.checked)">
                         <span>${value}</span>
                     </div>
                 `;
@@ -671,8 +884,8 @@
             html += `
                 </div>
                 <div class="filter-actions">
-                    <button class="filter-btn" onclick="selectAllInColumn('${column}')">Select All</button>
-                    <button class="filter-btn" onclick="clearColumnFilter('${column}')">Clear</button>
+                    <button class="filter-btn" onclick="selectAllInColumn('${columnId}')">Select All</button>
+                    <button class="filter-btn" onclick="clearColumnFilter('${columnId}')">Clear</button>
                 </div>
             `;
 
@@ -690,150 +903,99 @@
             });
         }
 
-        // Get unique values for a column
-        function getUniqueValues(column) {
+        // Get unique values for a column (dynamic version)
+        function getUniqueValues(columnId) {
             const values = new Set();
 
+            if (!columnFilters[columnId]) return [];
+
+            const columnName = columnFilters[columnId].name;
+
             allData.forEach(student => {
-                let value;
-                switch (column) {
-                    case 'enrollment':
-                        value = student["Enrollment No."] || student["ENROLLMENT NO"] || "-";
-                        break;
-                    case 'name':
-                        value = student["Name of Student"] || "-";
-                        break;
-                    case 'branch':
-                        value = student["Branch"] || "-";
-                        break;
-                    case 'status':
-                        value = student["6th Sem Status"] || "-";
-                        break;
-                    case 'form':
-                        value = student["Form Submitted"] || "-";
-                        break;
-                    case 'choice1':
-                        value = student["Elective-3 Choice-1"] || "-";
-                        break;
-                    case 'choice2':
-                        value = student["Elective-3 Choice-2"] || "-";
-                        break;
-                    case 'choice3':
-                        value = student["Elective-3 Choice-3"] || "-";
-                        break;
-                    case 'choice4':
-                        value = student["Elective-3 Choice-4"] || "-";
-                        break;
-                }
-                values.add(value);
+                const value = student[columnName] || "-";
+                values.add(String(value));
             });
 
             return Array.from(values).sort();
         }
 
-        // Update column filter
-        function updateColumnFilter(column, value, checked) {
+        // Update column filter (dynamic version)
+        function updateColumnFilter(columnId, value, checked) {
+            if (!columnFilters[columnId]) return;
+
             if (checked) {
-                columnFilters[column].add(value);
+                columnFilters[columnId].values.add(value);
             } else {
-                columnFilters[column].delete(value);
+                columnFilters[columnId].values.delete(value);
             }
 
-            updateFilterIcon(column);
+            updateFilterIcon(columnId);
             applyFilters();
         }
 
-        // Select all in column
-        function selectAllInColumn(column) {
-            const values = getUniqueValues(column);
-            columnFilters[column] = new Set(values);
-            buildFilterDropdown(column);
-            updateFilterIcon(column);
+        // Select all in column (dynamic version)
+        function selectAllInColumn(columnId) {
+            const values = getUniqueValues(columnId);
+            if (columnFilters[columnId]) {
+                columnFilters[columnId].values = new Set(values);
+            }
+            buildFilterDropdown(columnId);
+            updateFilterIcon(columnId);
             applyFilters();
         }
 
-        // Clear column filter
-        function clearColumnFilter(column) {
-            columnFilters[column].clear();
-            buildFilterDropdown(column);
-            updateFilterIcon(column);
+        // Clear column filter (dynamic version)
+        function clearColumnFilter(columnId) {
+            if (columnFilters[columnId]) {
+                columnFilters[columnId].values.clear();
+            }
+            buildFilterDropdown(columnId);
+            updateFilterIcon(columnId);
             applyFilters();
         }
 
-        // Clear all filters
+        // Clear all filters (dynamic version)
         function clearAllFilters() {
-            Object.keys(columnFilters).forEach(column => {
-                columnFilters[column].clear();
-                updateFilterIcon(column);
+            Object.keys(columnFilters).forEach(columnId => {
+                if (columnFilters[columnId]) {
+                    columnFilters[columnId].values.clear();
+                }
+                updateFilterIcon(columnId);
             });
             $('.filter-dropdown').removeClass('show');
             applyFilters();
         }
 
-        // Update filter icon appearance
-        function updateFilterIcon(column) {
-            const icon = $(`#filter-${column}`).prev().find('.filter-icon');
-            if (columnFilters[column].size > 0) {
+        // Update filter icon appearance (dynamic version)
+        function updateFilterIcon(columnId) {
+            const icon = $(`#filter-${columnId}`).prev().find('.filter-icon');
+            if (columnFilters[columnId] && columnFilters[columnId].values.size > 0) {
                 icon.addClass('active');
             } else {
                 icon.removeClass('active');
             }
         }
 
-        // Apply all filters
+        // Apply all filters (dynamic version)
         function applyFilters() {
             const searchTerm = $("#search").val().toLowerCase();
 
             const filtered = allData.filter(student => {
                 // Apply column filters
-                for (let column in columnFilters) {
-                    if (columnFilters[column].size > 0) {
-                        let value;
-                        switch (column) {
-                            case 'enrollment':
-                                value = student["Enrollment No."] || student["ENROLLMENT NO"] || "-";
-                                break;
-                            case 'name':
-                                value = student["Name of Student"] || "-";
-                                break;
-                            case 'branch':
-                                value = student["Branch"] || "-";
-                                break;
-                            case 'status':
-                                value = student["6th Sem Status"] || "-";
-                                break;
-                            case 'form':
-                                value = student["Form Submitted"] || "-";
-                                break;
-                            case 'choice1':
-                                value = student["Elective-3 Choice-1"] || "-";
-                                break;
-                            case 'choice2':
-                                value = student["Elective-3 Choice-2"] || "-";
-                                break;
-                            case 'choice3':
-                                value = student["Elective-3 Choice-3"] || "-";
-                                break;
-                            case 'choice4':
-                                value = student["Elective-3 Choice-4"] || "-";
-                                break;
-                        }
-
-                        if (!columnFilters[column].has(value)) {
+                for (let columnId in columnFilters) {
+                    const filter = columnFilters[columnId];
+                    if (filter && filter.values && filter.values.size > 0) {
+                        const value = String(student[filter.name] || "-");
+                        if (!filter.values.has(value)) {
                             return false;
                         }
                     }
                 }
 
-                // Apply search filter
+                // Apply search filter (searches all columns)
                 if (searchTerm !== "") {
-                    const enrollment = (student["Enrollment No."] || student["ENROLLMENT NO"] || "").toString().toLowerCase();
-                    const name = (student["Name of Student"] || "").toLowerCase();
-                    const branch = (student["Branch"] || "").toLowerCase();
-
-                    if (!enrollment.includes(searchTerm) &&
-                        !name.includes(searchTerm) &&
-                        !branch.includes(searchTerm)) {
+                    const allValues = Object.values(student).join(' ').toLowerCase();
+                    if (!allValues.includes(searchTerm)) {
                         return false;
                     }
                 }
@@ -846,17 +1008,17 @@
             $("#stat-showing").text(filtered.length);
         }
 
-        // Update active filters display
+        // Update active filters display (dynamic version)
         function updateActiveFilters() {
             const activeFiltersDiv = $("#active-filters");
             let hasFilters = false;
             let html = '<strong>Active Filters:</strong> ';
 
-            for (let column in columnFilters) {
-                if (columnFilters[column].size > 0) {
+            for (let columnId in columnFilters) {
+                const filter = columnFilters[columnId];
+                if (filter && filter.values && filter.values.size > 0) {
                     hasFilters = true;
-                    const columnName = column.charAt(0).toUpperCase() + column.slice(1);
-                    html += `<span class="filter-tag">${columnName}: ${columnFilters[column].size} selected</span>`;
+                    html += `<span class="filter-tag">${filter.name}: ${filter.values.size} selected</span>`;
                 }
             }
 
@@ -944,6 +1106,11 @@
                 $("#stat-excluded").text(stats.total_excluded || 0);
                 $("#stat-unchecked").text(stats.not_checked || 0);
 
+                // Build dynamic table headers
+                if (allData.length > 0) {
+                    buildDynamicTable();
+                }
+
                 applyFilters();
                 $("#loading").hide();
 
@@ -959,7 +1126,84 @@
             });
         }
 
-        // Display data in table
+        // Build dynamic table headers based on data
+        function buildDynamicTable() {
+            if (allData.length === 0) return;
+
+            // Get all unique column names from the data
+            const columns = new Set();
+            allData.forEach(record => {
+                Object.keys(record).forEach(key => columns.add(key));
+            });
+
+            // Store column order globally
+            columnOrder = Array.from(columns).sort();
+
+            // Build table header
+            const thead = $("#data-table thead");
+            thead.empty();
+
+            let headerRow = '<tr><th style="width: 60px;">#</th>';
+
+            columnOrder.forEach(column => {
+                const columnId = column.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                headerRow += `
+                    <th>
+                        <div class="th-content">
+                            <span onclick="sortColumn('${column}')" style="cursor: pointer;">${column} <span class="sort-icon" id="sort-${columnId}">⇅</span></span>
+                            <span class="filter-icon" onclick="toggleFilter(event, '${columnId}')">▼</span>
+                        </div>
+                        <div class="filter-dropdown" id="filter-${columnId}"></div>
+                    </th>
+                `;
+            });
+
+            headerRow += '</tr>';
+            thead.html(headerRow);
+
+            // Initialize column filters for new structure
+            columnFilters = {};
+            columnOrder.forEach(column => {
+                const columnId = column.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                columnFilters[columnId] = {
+                    name: column,
+                    values: new Set()
+                };
+            });
+        }
+
+        // Sort column function
+        function sortColumn(columnName) {
+            // Toggle sort direction
+            if (sortState.column === columnName) {
+                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.column = columnName;
+                sortState.direction = 'asc';
+            }
+
+            // Sort allData
+            allData.sort((a, b) => {
+                const aVal = String(a[columnName] || '').toLowerCase();
+                const bVal = String(b[columnName] || '').toLowerCase();
+
+                if (sortState.direction === 'asc') {
+                    return aVal.localeCompare(bVal, undefined, { numeric: true });
+                } else {
+                    return bVal.localeCompare(aVal, undefined, { numeric: true });
+                }
+            });
+
+            // Update sort icons
+            $('.sort-icon').text('⇅');
+            const columnId = columnName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            $(`#sort-${columnId}`).text(sortState.direction === 'asc' ? '↑' : '↓');
+
+            // Re-apply filters to refresh display
+            applyFilters();
+        }
+
+        // Display data in table (dynamic version)
         function displayData(data) {
             const tbody = $("#table-body");
             tbody.empty();
@@ -968,29 +1212,16 @@
                 return;
             }
 
+            // Use the globally stored column order
             data.forEach(function (student, index) {
-                const formStatus = student["Form Submitted"] === "SUBMITTED" ?
-                    '<span class="badge badge-success">Submitted</span>' :
-                    '<span class="badge badge-warning">Not Submitted</span>';
+                let row = `<tr><td style="font-weight: 600; color: #6b7280;">${index + 1}</td>`;
 
-                const semStatus = student["6th Sem Status"] === "Hosteller" ?
-                    '<span class="badge badge-hosteller">Hosteller</span>' :
-                    '<span class="badge badge-commuter">Commuter</span>';
+                columnOrder.forEach(column => {
+                    const value = student[column] || "-";
+                    row += `<td>${value}</td>`;
+                });
 
-                const row = `
-                    <tr>
-                        <td style="font-weight: 600; color: #6b7280;">${index + 1}</td>
-                        <td>${student["Enrollment No."] || student["ENROLLMENT NO"] || "-"}</td>
-                        <td>${student["Name of Student"] || "-"}</td>
-                        <td>${student["Branch"] || "-"}</td>
-                        <td>${semStatus}</td>
-                        <td>${formStatus}</td>
-                        <td>${student["Elective-3 Choice-1"] || "-"}</td>
-                        <td>${student["Elective-3 Choice-2"] || "-"}</td>
-                        <td>${student["Elective-3 Choice-3"] || "-"}</td>
-                        <td>${student["Elective-3 Choice-4"] || "-"}</td>
-                    </tr>
-                `;
+                row += '</tr>';
                 tbody.append(row);
             });
         }
@@ -1007,6 +1238,7 @@
 
         // Load data on page load
         $(document).ready(function () {
+            loadSheetConfig();
             loadData();
         });
     </script>
