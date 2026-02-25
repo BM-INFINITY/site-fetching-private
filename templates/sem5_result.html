@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sem 5 Result — All Branches</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 60%, #8b5cf6 100%);
+            color: white;
+            padding: 20px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-left h1 {
+            font-size: 1.5em;
+            margin-bottom: 2px;
+        }
+
+        .header-left p {
+            opacity: 0.9;
+            font-size: 0.85em;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ── BUTTONS ── */
+        button {
+            padding: 8px 16px;
+            font-size: 13px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .btn-clear {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #dc2626;
+        }
+
+        /* View Result link */
+        .btn-view {
+            padding: 5px 11px;
+            font-size: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-view:hover {
+            opacity: 0.85;
+        }
+
+        .btn-view.unknown {
+            background: #9ca3af;
+            pointer-events: none;
+        }
+
+
+        /* ── TOOLBAR ── */
+        .toolbar {
+            padding: 12px 14px;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 160px;
+            padding: 9px 13px;
+            font-size: 14px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            max-width: 150px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        /* ── ACTIVE FILTER TAGS ── */
+        .active-filters-bar {
+            padding: 7px 14px;
+            background: #fff7ed;
+            border-bottom: 1px solid #fed7aa;
+            display: none;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            font-size: 12px;
+            color: #7c3aed;
+        }
+
+        .active-filters-bar.show {
+            display: flex;
+        }
+
+        .filter-tag {
+            background: #fde68a;
+            color: #78350f;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .filter-tag:hover {
+            background: #fbbf24;
+        }
+
+        /* ── TABLE WRAPPER ── */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 260px);
+            min-height: 200px;
+        }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #1f2937;
+        }
+
+        th {
+            padding: 0;
+            white-space: nowrap;
+            color: white;
+            font-weight: 600;
+            border-right: 1px solid #374151;
+            position: relative;
+            user-select: none;
+        }
+
+        .th-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 11px 12px;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .th-inner:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .th-inner.no-sort {
+            cursor: default;
+        }
+
+        .th-inner.no-sort:hover {
+            background: none;
+        }
+
+        .th-label {
+            flex: 1;
+        }
+
+        .sort-icon {
+            font-size: 11px;
+            opacity: 0.5;
+            min-width: 12px;
+        }
+
+        th.sort-asc .sort-icon,
+        th.sort-desc .sort-icon {
+            opacity: 1;
+            color: #fbbf24;
+        }
+
+        /* filter row */
+        .filter-row th {
+            background: #374151;
+            padding: 0;
+        }
+
+        .col-filter-input {
+            width: 100%;
+            padding: 5px 9px;
+            font-size: 12px;
+            border: none;
+            background: #4b5563;
+            color: white;
+            outline: none;
+        }
+
+        .col-filter-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .col-filter-input:focus {
+            background: #6b7280;
+        }
+
+        /* ── TABLE BODY ── */
+        td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            border-right: 1px solid #f3f4f6;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: #fef3c7;
+        }
+
+        tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        tr:nth-child(even):hover td {
+            background: #fef3c7;
+        }
+
+        .row-num {
+            color: #9ca3af;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        /* GPA coloring */
+        .gpa-high {
+            color: #059669;
+            font-weight: 700;
+        }
+
+        .gpa-mid {
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .gpa-low {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Backlog */
+        .bl-zero {
+            color: #9ca3af;
+        }
+
+        .bl-warn {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .bl-crit {
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        /* Branch badge */
+        .branch-badge {
+            padding: 2px 9px;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            padding: 10px 14px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        /* ── LOADING ── */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.88);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 5px solid #f3f4f6;
+            border-top-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── MOBILE CARDS (< 640px) ── */
+        @media (max-width: 639px) {
+            body {
+                padding: 8px;
+            }
+
+            .header {
+                padding: 14px 12px;
+            }
+
+            .header-left h1 {
+                font-size: 1.2em;
+            }
+
+            /* Hide desktop table */
+            .table-wrapper {
+                display: none;
+            }
+
+            /* Show card list */
+            .card-list {
+                display: block;
+            }
+
+            .stats-bar .stat-item {
+                min-width: 80px;
+                padding: 10px 8px;
+            }
+
+            .stats-bar .stat-item .value {
+                font-size: 1.1em;
+            }
+
+            .toolbar {
+                gap: 6px;
+            }
+
+            .filter-select {
+                max-width: 120px;
+                font-size: 12px;
+            }
+        }
+
+        /* ── CARD LIST (mobile only) ── */
+        .card-list {
+            display: none;
+            /* shown only on mobile via media query */
+            padding: 10px;
+        }
+
+        .student-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .card-name {
+            font-weight: 700;
+            font-size: 14px;
+            color: #1f2937;
+        }
+
+        .card-enrollment {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .card-pill {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pill-branch {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .pill-gpa-hi {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .pill-gpa-mi {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .pill-gpa-lo {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .pill-bl-ok {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .pill-bl-wa {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .pill-bl-cr {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .card-stat-box {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 7px;
+            text-align: center;
+        }
+
+        .card-stat-box .csl {
+            font-size: 10px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .card-stat-box .csv {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-view-card {
+            padding: 8px 18px;
+            font-size: 13px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-view-card:active {
+            opacity: 0.85;
+        }
+
+        .btn-view-card.unknown {
+            background: #9ca3af;
+            pointer-events: none;
+        }
+
+        /* No results */
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+            font-size: 1em;
+            display: none;
+        }
+
+        .no-results.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="position:relative;">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>🎓 Semester 5 Results</h1>
+                <p id="subtitle">All Branches · Loading…</p>
+            </div>
+            <div class="header-right">
+                <button class="btn-back" onclick="window.close()">← Back</button>
+                <button class="btn-clear" onclick="clearAll()">🗑️ Clear</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <input type="search" class="search-box" id="globalSearch" placeholder="🔍 Search name, enrollment…"
+                oninput="applyFilters()">
+
+            <div class="filter-group">
+                <span class="filter-label">Branch:</span>
+                <select class="filter-select" id="branchFilter" onchange="applyFilters()">
+                    <option value="">All</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label">SGPA ≥</span>
+                <select class="filter-select" id="sgpaFilter" onchange="applyFilters()">
+                    <option value="">Any</option>
+                    <option value="9">9.0+</option>
+                    <option value="8">8.0+</option>
+                    <option value="7">7.0+</option>
+                    <option value="6">6.0+</option>
+                    <option value="5">5.0+</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label">Backlogs:</span>
+                <select class="filter-select" id="backlogFilter" onchange="applyFilters()">
+                    <option value="">Any</option>
+                    <option value="0">Clear (0)</option>
+                    <option value="1plus">1+</option>
+                    <option value="3plus">3+</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Active Filter Tags -->
+        <div class="active-filters-bar" id="activeFiltersBar">
+            <strong>Filters:</strong>
+            <span id="activeFilterTags"></span>
+        </div>
+
+        <!-- ── DESKTOP TABLE ── -->
+        <div class="table-wrapper" id="tableWrapper">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <p>Loading result data…</p>
+            </div>
+            <table id="resultTable">
+                <thead>
+                    <tr id="headerRow">
+                        <th style="width:42px;">
+                            <div class="th-inner no-sort"><span class="th-label">#</span></div>
+                        </th>
+                        <th data-col="Enrollment">
+                            <div class="th-inner" onclick="sortBy('Enrollment')"><span
+                                    class="th-label">Enrollment</span><span class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="Name">
+                            <div class="th-inner" onclick="sortBy('Name')"><span class="th-label">Name</span><span
+                                    class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="Branch">
+                            <div class="th-inner" onclick="sortBy('Branch')"><span class="th-label">Branch</span><span
+                                    class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="SGPA">
+                            <div class="th-inner" onclick="sortBy('SGPA')"><span class="th-label">SGPA</span><span
+                                    class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="CGPA">
+                            <div class="th-inner" onclick="sortBy('CGPA')"><span class="th-label">CGPA</span><span
+                                    class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="Current_Backlog">
+                            <div class="th-inner" onclick="sortBy('Current_Backlog')"><span class="th-label">Curr.
+                                    BL</span><span class="sort-icon">↕</span></div>
+                        </th>
+                        <th data-col="Progressive_Backlog">
+                            <div class="th-inner" onclick="sortBy('Progressive_Backlog')"><span class="th-label">Prog.
+                                    BL</span><span class="sort-icon">↕</span></div>
+                        </th>
+                        <th style="width:120px;">
+                            <div class="th-inner no-sort"><span class="th-label">Result</span></div>
+                        </th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th></th>
+                        <th><input class="col-filter-input" data-col="Enrollment" placeholder="Filter…"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="Name" placeholder="Filter…"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="Branch" placeholder="Filter…"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="SGPA" placeholder="≥ value"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="CGPA" placeholder="≥ value"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="Current_Backlog" placeholder="0"
+                                oninput="applyFilters()"></th>
+                        <th><input class="col-filter-input" data-col="Progressive_Backlog" placeholder="0"
+                                oninput="applyFilters()"></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- ── MOBILE CARDS ── -->
+        <div class="card-list" id="cardList"></div>
+        <div class="no-results" id="noResults">No records match the current filters.</div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <span id="footerInfo">Loading…</span>
+            <span>Sem 5 · All Branches </span>
+        </div>
+    </div>
+
+    <script>
+        const BASE = 'https://result.ganpatuniversity.ac.in/frmUniResult.aspx';
+        const BRANCH_PARA = {
+            'COMPUTER ENGINEERING': '1,5,1,{e},16473',
+            'INFORMATION TECHNOLOGY': '1,5,2,{e},16480',
+            'CE-IOT': '18,5,276,{e},16412',
+            'IT-IOT': '18,5,327,{e},16418',
+            'CE-AI': '1,5,239,{e},16474',
+        };
+
+        function buildUrl(enrollment, branch) {
+            const tpl = BRANCH_PARA[branch];
+            if (!tpl) return null;
+            return `${BASE}?Para=${encodeURIComponent(tpl.replace('{e}', enrollment))}`;
+        }
+
+        let allData = [], filteredData = [];
+        let sortState = { col: null, dir: 'asc' };
+        const isMobile = () => window.innerWidth < 640;
+
+        // ── Load ─────────────────────────────────────────────────────
+        async function loadData() {
+            try {
+                const json = await (await fetch('/sem5_data')).json();
+                allData = json.records || [];
+                populateBranchFilter();
+                applyFilters();
+                document.getElementById('loadingOverlay').style.display = 'none';
+            } catch (e) {
+                document.getElementById('loadingOverlay').innerHTML =
+                    `<p style="color:#ef4444;font-weight:600;">❌ Failed to load data.<br>${e.message}</p>`;
+            }
+        }
+
+        function populateBranchFilter() {
+            const branches = [...new Set(allData.map(r => r.Branch).filter(Boolean))].sort();
+            const sel = document.getElementById('branchFilter');
+            branches.forEach(b => {
+                const o = document.createElement('option');
+                o.value = b; o.textContent = b;
+                sel.appendChild(o);
+            });
+        }
+
+        // ── Filters ───────────────────────────────────────────────────
+        function applyFilters() {
+            const gs = document.getElementById('globalSearch').value.toLowerCase().trim();
+            const branch = document.getElementById('branchFilter').value;
+            const sgpaMin = parseFloat(document.getElementById('sgpaFilter').value) || 0;
+            const backlog = document.getElementById('backlogFilter').value;
+
+            const colInputs = {};
+            document.querySelectorAll('.col-filter-input').forEach(el => {
+                const v = el.value.trim().toLowerCase();
+                if (v) colInputs[el.dataset.col] = v;
+            });
+
+            filteredData = allData.filter(row => {
+                if (gs && !Object.values(row).some(v => String(v).toLowerCase().includes(gs))) return false;
+                if (branch && row.Branch !== branch) return false;
+                if (sgpaMin && parseFloat(row.SGPA) < sgpaMin) return false;
+                if (backlog === '0' && parseInt(row.Current_Backlog) !== 0) return false;
+                if (backlog === '1plus' && parseInt(row.Current_Backlog) < 1) return false;
+                if (backlog === '3plus' && parseInt(row.Current_Backlog) < 3) return false;
+                for (const [col, val] of Object.entries(colInputs))
+                    if (!String(row[col] || '').toLowerCase().includes(val)) return false;
+                return true;
+            });
+
+            if (sortState.col) applySortToFiltered();
+
+            if (isMobile()) renderCards();
+            else renderTable();
+
+            updateStats();
+            updateActiveFiltersBar();
+        }
+
+        // ── Sort ──────────────────────────────────────────────────────
+        function sortBy(col) {
+            sortState.dir = sortState.col === col && sortState.dir === 'asc' ? 'desc' : 'asc';
+            sortState.col = col;
+            document.querySelectorAll('th[data-col]').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                const ic = th.querySelector('.sort-icon');
+                if (ic) ic.textContent = '↕';
+            });
+            const th = document.querySelector(`th[data-col="${col}"]`);
+            if (th) {
+                th.classList.add(sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+                const ic = th.querySelector('.sort-icon');
+                if (ic) ic.textContent = sortState.dir === 'asc' ? '↑' : '↓';
+            }
+            applySortToFiltered();
+            renderTable();
+        }
+
+        function applySortToFiltered() {
+            const { col, dir } = sortState;
+            const d = dir === 'asc' ? 1 : -1;
+            const num = ['SGPA', 'CGPA', 'Current_Backlog', 'Progressive_Backlog'];
+            filteredData.sort((a, b) => {
+                let va = a[col] ?? '', vb = b[col] ?? '';
+                if (num.includes(col)) return ((parseFloat(va) || 0) - (parseFloat(vb) || 0)) * d;
+                return String(va).localeCompare(String(vb)) * d;
+            });
+        }
+
+        // ── Render Desktop Table ──────────────────────────────────────
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const noRes = document.getElementById('noResults');
+            noRes.classList.remove('show');
+            if (!filteredData.length) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af;">No records match.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = filteredData.map((row, i) => {
+                const sgpa = parseFloat(row.SGPA) || 0;
+                const cgpa = parseFloat(row.CGPA) || 0;
+                const cb = parseInt(row.Current_Backlog) || 0;
+                const pb = parseInt(row.Progressive_Backlog) || 0;
+                const url = buildUrl(row.Enrollment, row.Branch);
+                return `<tr>
+                <td class="row-num">${i + 1}</td>
+                <td><code style="font-size:11px;">${esc(row.Enrollment)}</code></td>
+                <td><strong>${esc(row.Name)}</strong></td>
+                <td><span class="branch-badge">${esc(row.Branch)}</span></td>
+                <td class="${gpaClass(sgpa)}">${sgpa.toFixed(2)}</td>
+                <td class="${gpaClass(cgpa)}">${cgpa.toFixed(2)}</td>
+                <td class="${blClass(cb)}">${cb}</td>
+                <td class="${blClass(pb)}">${pb}</td>
+                <td>${url
+                        ? `<a class="btn-view" href="${url}" target="_blank" rel="noopener">🔗 View</a>`
+                        : `<a class="btn-view unknown">N/A</a>`}</td>
+            </tr>`;
+            }).join('');
+        }
+
+        // ── Render Mobile Cards ───────────────────────────────────────
+        function renderCards() {
+            const list = document.getElementById('cardList');
+            const noRes = document.getElementById('noResults');
+            if (!filteredData.length) {
+                list.innerHTML = '';
+                noRes.classList.add('show');
+                return;
+            }
+            noRes.classList.remove('show');
+            list.innerHTML = filteredData.map(row => {
+                const sgpa = parseFloat(row.SGPA) || 0;
+                const cgpa = parseFloat(row.CGPA) || 0;
+                const cb = parseInt(row.Current_Backlog) || 0;
+                const pb = parseInt(row.Progressive_Backlog) || 0;
+                const url = buildUrl(row.Enrollment, row.Branch);
+
+                const gpaPill = sgpa >= 8 ? 'pill-gpa-hi' : sgpa >= 6.5 ? 'pill-gpa-mi' : 'pill-gpa-lo';
+                const blPill = cb === 0 ? 'pill-bl-ok' : cb >= 3 ? 'pill-bl-cr' : 'pill-bl-wa';
+
+                return `<div class="student-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-name">${esc(row.Name)}</div>
+                        <div class="card-enrollment">${esc(row.Enrollment)}</div>
+                    </div>
+                    <span class="card-pill pill-branch">${esc(row.Branch)}</span>
+                </div>
+                <div class="card-stats">
+                    <div class="card-stat-box">
+                        <div class="csl">SGPA</div>
+                        <div class="csv ${gpaClass(sgpa)}">${sgpa.toFixed(2)}</div>
+                    </div>
+                    <div class="card-stat-box">
+                        <div class="csl">CGPA</div>
+                        <div class="csv ${gpaClass(cgpa)}">${cgpa.toFixed(2)}</div>
+                    </div>
+                    <div class="card-stat-box">
+                        <div class="csl">Curr BL</div>
+                        <div class="csv ${blClass(cb)}">${cb}</div>
+                    </div>
+                    <div class="card-stat-box">
+                        <div class="csl">Prog BL</div>
+                        <div class="csv ${blClass(pb)}">${pb}</div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    ${url
+                        ? `<a class="btn-view-card" href="${url}" target="_blank" rel="noopener">🔗 View Full Result</a>`
+                        : `<a class="btn-view-card unknown">N/A</a>`}
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────
+        function gpaClass(v) { return v >= 8 ? 'gpa-high' : v >= 6.5 ? 'gpa-mid' : 'gpa-low'; }
+        function blClass(v) { return v === 0 ? 'bl-zero' : v >= 3 ? 'bl-crit' : 'bl-warn'; }
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // ── Stats ─────────────────────────────────────────────────────
+        function updateStats() {
+            document.getElementById('subtitle').textContent = `All Branches · ${allData.length} Students`;
+            document.getElementById('footerInfo').textContent = `Showing ${filteredData.length} of ${allData.length}`;
+        }
+
+        // ── Active Filter Tags ────────────────────────────────────────
+        function updateActiveFiltersBar() {
+            const tags = [];
+            const gs = document.getElementById('globalSearch').value.trim();
+            if (gs) tags.push(`"${gs}"`);
+            const br = document.getElementById('branchFilter').value;
+            if (br) tags.push(`Branch: ${br}`);
+            const sg = document.getElementById('sgpaFilter').value;
+            if (sg) tags.push(`SGPA ≥ ${sg}`);
+            const bl = document.getElementById('backlogFilter').value;
+            if (bl) tags.push(`BL: ${bl}`);
+            document.querySelectorAll('.col-filter-input').forEach(el => {
+                if (el.value.trim()) tags.push(`${el.dataset.col}: "${el.value.trim()}"`);
+            });
+
+            const bar = document.getElementById('activeFiltersBar');
+            const span = document.getElementById('activeFilterTags');
+            if (tags.length) {
+                bar.classList.add('show');
+                span.innerHTML = tags.map(t =>
+                    `<span class="filter-tag" onclick="clearAll()">${esc(t)} ✕</span>`
+                ).join('');
+            } else {
+                bar.classList.remove('show');
+                span.innerHTML = '';
+            }
+        }
+
+        // ── Clear All ─────────────────────────────────────────────────
+        function clearAll() {
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('branchFilter').value = '';
+            document.getElementById('sgpaFilter').value = '';
+            document.getElementById('backlogFilter').value = '';
+            document.querySelectorAll('.col-filter-input').forEach(el => el.value = '');
+            sortState = { col: null, dir: 'asc' };
+            document.querySelectorAll('th[data-col]').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                const ic = th.querySelector('.sort-icon');
+                if (ic) ic.textContent = '↕';
+            });
+            applyFilters();
+        }
+
+        // ── Responsive re-render on resize ────────────────────────────
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (filteredData.length) {
+                    if (isMobile()) renderCards();
+                    else renderTable();
+                }
+            }, 150);
+        });
+
+        loadData();
+    </script>
+</body>
+
+</html>

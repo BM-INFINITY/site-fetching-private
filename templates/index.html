@@ -122,6 +122,15 @@
             background: #dc2626;
         }
 
+        .btn-sem5 {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            color: white;
+        }
+
+        .btn-sem5:hover {
+            background: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -600,6 +609,9 @@
                 </button>
                 <button class="btn-clear-filters" onclick="clearAllFilters()">
                     🗑️ Clear Filters
+                </button>
+                <button class="btn-sem5" onclick="window.open('/sem5_result', '_blank')">
+                    🎓 Sem 5 Result
                 </button>
             </div>
 

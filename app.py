@@ -508,6 +508,30 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/sem5_result")
+def sem5_result():
+    """Render Sem 5 Result page"""
+    return render_template("sem5_result.html")
+
+
+@app.route("/sem5_data")
+def sem5_data():
+    """Serve the Sem 5 merged CSV data as JSON"""
+    try:
+        csv_path = os.path.join(os.path.dirname(__file__), "sem_5_all merged.csv")
+        records = []
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Clean up the unnamed index column if present
+                clean_row = {k: v for k, v in row.items() if k and k != ""}
+                records.append(clean_row)
+        return jsonify({"records": records, "total": len(records)})
+    except Exception as e:
+        logger.error(f"Error serving sem5 data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     logger.info("Starting Flask application")
     app.run(debug=True)
