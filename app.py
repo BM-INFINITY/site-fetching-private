@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template, send_file
-import requests, time, json, threading, os, csv, logging
+import requests, time, json, threading, os, csv, logging, openpyxl
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.exceptions import RequestException, ConnectionError
 from datetime import datetime
@@ -532,6 +532,37 @@ def sem5_data():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/cp2")
+def cp2():
+    """Render CP2 seating and project page"""
+    return render_template("cp2.html")
+
+
+@app.route("/cp2_data")
+def cp2_data():
+    """Serve CP2 Excel data as JSON"""
+    try:
+        excel_path = os.path.join(os.path.dirname(__file__), "attendance_results_styled.xlsx")
+        wb = openpyxl.load_workbook(excel_path, data_only=True)
+        sheet = wb.active
+        
+        # Extract headers from the first row
+        headers = [str(cell.value) if cell.value else f"Col{i}" for i, cell in enumerate(sheet[1], 1)]
+        
+        records = []
+        # Iterate over data rows
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if any(row):  # Skip empty rows
+                record = {headers[i]: str(val) if val is not None else "" for i, val in enumerate(row)}
+                records.append(record)
+                
+        return jsonify({"records": records, "total": len(records)})
+    except Exception as e:
+        logger.error(f"Error serving CP2 data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     logger.info("Starting Flask application")
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

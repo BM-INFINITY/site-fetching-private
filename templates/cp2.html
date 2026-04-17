@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CP2 — Seating & Project Arrangement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 60%, #064e3b 100%);
+            color: white;
+            padding: 20px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-left h1 {
+            font-size: 1.5em;
+            margin-bottom: 2px;
+        }
+
+        .header-left p {
+            opacity: 0.9;
+            font-size: 0.85em;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ── BUTTONS ── */
+        button {
+            padding: 8px 16px;
+            font-size: 13px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .btn-clear {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #dc2626;
+        }
+
+        /* ── TOOLBAR ── */
+        .toolbar {
+            padding: 12px 14px;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 160px;
+            padding: 9px 13px;
+            font-size: 14px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            max-width: 150px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+
+        /* ── TABLE WRAPPER ── */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 220px);
+            min-height: 200px;
+        }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #1f2937;
+        }
+
+        th {
+            padding: 0;
+            white-space: nowrap;
+            color: white;
+            font-weight: 600;
+            border-right: 1px solid #374151;
+            position: relative;
+            user-select: none;
+        }
+
+        .th-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 11px 12px;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .th-inner:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .th-inner.no-sort {
+            cursor: default;
+        }
+
+        .th-label {
+            flex: 1;
+        }
+
+        .sort-icon {
+            font-size: 11px;
+            opacity: 0.5;
+            min-width: 12px;
+        }
+
+        th.sort-asc .sort-icon,
+        th.sort-desc .sort-icon {
+            opacity: 1;
+            color: #10b981;
+        }
+
+        /* ── TABLE BODY ── */
+        td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            border-right: 1px solid #f3f4f6;
+            color: #374151;
+        }
+
+        tr:hover td {
+            background: #ecfdf5;
+        }
+
+        tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        .enrollment-cell {
+            font-family: monospace;
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .team-id-badge {
+            padding: 2px 8px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        .location-badge {
+            padding: 2px 8px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            padding: 10px 14px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* ── LOADING ── */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.88);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 5px solid #f3f4f6;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 639px) {
+            .header-left h1 { font-size: 1.2em; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="position:relative;">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>🎓 CP2 Seating Arrangement</h1>
+                <p id="subtitle">Internal Project Arrangement · Loading…</p>
+            </div>
+            <div class="header-right">
+                <button class="btn-back" onclick="window.close()">← Close</button>
+                <button class="btn-clear" onclick="clearAllFilters()">🗑️ Reset</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <input type="search" class="search-box" id="globalSearch" placeholder="🔍 Search name, enrollment, project…" oninput="applyFilters()">
+
+            <div class="filter-group">
+                <span class="filter-label">Location:</span>
+                <select class="filter-select" id="locationFilter" onchange="applyFilters()">
+                    <option value="">All Locations</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label">Team ID:</span>
+                <select class="filter-select" id="teamFilter" onchange="applyFilters()">
+                    <option value="">All Teams</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Desktop Table -->
+        <div class="table-wrapper" id="tableWrapper">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <p>Loading CP2 data…</p>
+            </div>
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th style="width:40px;"><div class="th-inner no-sort"><span class="th-label">Sr</span></div></th>
+                        <th onclick="sortBy('Enrollment No.')"><div class="th-inner"><span class="th-label">Enrollment</span><span class="sort-icon">↕</span></div></th>
+                        <th onclick="sortBy('Name of Student')"><div class="th-inner"><span class="th-label">Name</span><span class="sort-icon">↕</span></div></th>
+                        <th onclick="sortBy('Final Exam Location')"><div class="th-inner"><span class="th-label">Ex. Location</span><span class="sort-icon">↕</span></div></th>
+                        <th onclick="sortBy('Final Exam Sitting Location')"><div class="th-inner"><span class="th-label">Sitting</span><span class="sort-icon">↕</span></div></th>
+                        <th onclick="sortBy('Team Id')"><div class="th-inner"><span class="th-label">Team Id</span><span class="sort-icon">↕</span></div></th>
+                        <th onclick="sortBy('Project Title')"><div class="th-inner"><span class="th-label">Project Title</span><span class="sort-icon">↕</span></div></th>
+                        <th><div class="th-inner no-sort"><span class="th-label">Team Members</span></div></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <span id="footerInfo">Loading data…</span>
+            <span>CP2 · Project Arrangement</span>
+        </div>
+    </div>
+
+    <script>
+        let allData = [], filteredData = [];
+        let sortState = { col: null, dir: 'asc' };
+
+        // Load Data
+        async function loadData() {
+            try {
+                const response = await fetch('/cp2_data');
+                const json = await response.json();
+                allData = json.records || [];
+                
+                populateFilters();
+                applyFilters();
+                
+                document.getElementById('loadingOverlay').style.display = 'none';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loadingOverlay').innerHTML = `<p style="color:#ef4444;">❌ Failed to load data.</p>`;
+            }
+        }
+
+        function populateFilters() {
+            const locations = [...new Set(allData.map(r => r['Final Exam Location']).filter(Boolean))].sort();
+            const teams = [...new Set(allData.map(r => r['Team Id']).filter(Boolean))].sort();
+            
+            const locSelect = document.getElementById('locationFilter');
+            const teamSelect = document.getElementById('teamFilter');
+            
+            locations.forEach(l => {
+                const o = document.createElement('option');
+                o.value = l; o.textContent = l;
+                locSelect.appendChild(o);
+            });
+            
+            teams.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                teamSelect.appendChild(o);
+            });
+        }
+
+        function applyFilters() {
+            const gs = document.getElementById('globalSearch').value.toLowerCase();
+            const loc = document.getElementById('locationFilter').value;
+            const team = document.getElementById('teamFilter').value;
+
+            filteredData = allData.filter(row => {
+                const matchGs = !gs || Object.values(row).some(v => String(v).toLowerCase().includes(gs));
+                const matchLoc = !loc || row['Final Exam Location'] === loc;
+                const matchTeam = !team || row['Team Id'] === team;
+                return matchGs && matchLoc && matchTeam;
+            });
+
+            if (sortState.col) {
+                sortData(sortState.col, sortState.dir);
+            } else {
+                renderTable();
+            }
+        }
+
+        function sortBy(col) {
+            if (sortState.col === col) {
+                sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.col = col;
+                sortState.dir = 'asc';
+            }
+            
+            // Update UI Icons
+            document.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.getAttribute('onclick') && th.getAttribute('onclick').includes(col)) {
+                    th.classList.add(sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+
+            sortData(col, sortState.dir);
+        }
+
+        function sortData(col, dir) {
+            filteredData.sort((a, b) => {
+                let va = a[col] || '', vb = b[col] || '';
+                // Handle numeric strings
+                if (!isNaN(va) && !isNaN(vb)) {
+                    va = parseFloat(va); vb = parseFloat(vb);
+                }
+                if (va < vb) return dir === 'asc' ? -1 : 1;
+                if (va > vb) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align:right; color:#9ca3af; font-size:11px;">${i + 1}</td>
+                    <td class="enrollment-cell">${row['Enrollment No.']}</td>
+                    <td style="font-weight:600;">${row['Name of Student']}</td>
+                    <td><span class="location-badge">${row['Final Exam Location']}</span></td>
+                    <td>${row['Final Exam Sitting Location']}</td>
+                    <td><span class="team-id-badge">${row['Team Id']}</span></td>
+                    <td title="${row['Project Title']}">${truncate(row['Project Title'], 40)}</td>
+                    <td style="font-size:11px; max-width:250px; white-space:normal;">${row['Full Team Members']}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('subtitle').textContent = `Showing ${filteredData.length} students`;
+            document.getElementById('footerInfo').textContent = `Total: ${filteredData.length} records`;
+        }
+
+        function truncate(str, len) {
+            if (!str) return '';
+            return str.length > len ? str.substring(0, len) + '...' : str;
+        }
+
+        function clearAllFilters() {
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('locationFilter').value = '';
+            document.getElementById('teamFilter').value = '';
+            applyFilters();
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>
