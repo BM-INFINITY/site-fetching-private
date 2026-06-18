@@ -431,6 +431,25 @@
             background: #f9fafb;
         }
 
+        .disclaimer {
+            padding: 14px 30px;
+            background: #fffbeb;
+            border-top: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
+            color: #78350f;
+            font-size: 0.82em;
+            line-height: 1.6;
+        }
+
+        .disclaimer a {
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        .disclaimer a:hover {
+            text-decoration: underline;
+        }
+
         .active-filters {
             padding: 10px 30px;
             background: #fef3c7;
@@ -619,9 +638,6 @@
                 <button class="btn-clear-filters" onclick="clearAllFilters()">
                     🗑️ Clear Filters
                 </button>
-                <button class="btn-clear-filters" onclick="window.location.href='/cp2'">
-                    🧭 Go to CP2
-                </button>
                 <button class="btn-sem5" onclick="window.open('/sem5_result','_blank')">
                     🎓 Sem 5 Result
                 </button>
@@ -780,6 +796,14 @@
             </table>
         </div>
 
+        <div class="disclaimer">
+            ⚠️ <strong>Unofficial Tool &mdash; Disclaimer:</strong>
+            This website is an independent, student-built project and is <strong>not affiliated with or endorsed by Ganpat University</strong> or any official authority.
+            Result data is fetched from publicly accessible university portals and may contain errors, delays, or mismatches.
+            We do not guarantee the accuracy or completeness of any information displayed here.
+            <strong>We take no ownership of the data and bear no responsibility for decisions made based on it.</strong>
+            Always verify your results on the <a href="https://result.ganpatuniversity.ac.in" target="_blank" rel="noopener">official university portal</a>.
+        </div>
         <div class="last-updated" id="last-updated"></div>
     </div>
 
