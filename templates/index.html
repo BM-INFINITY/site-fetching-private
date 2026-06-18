@@ -131,6 +131,15 @@
             background: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
         }
 
+        .btn-sem6 {
+            background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+            color: white;
+        }
+
+        .btn-sem6:hover {
+            background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -611,8 +620,14 @@
                     🗑️ Clear Filters
                 </button>
                 <button class="btn-clear-filters" onclick="window.location.href='/cp2'">
-    🧭 Go to CP2
-</button>
+                    🧭 Go to CP2
+                </button>
+                <button class="btn-sem5" onclick="window.open('/sem5_result','_blank')">
+                    🎓 Sem 5 Result
+                </button>
+                <button class="btn-sem6" onclick="window.open('/sem6_result','_blank')">
+                    🎓 Sem 6 Result
+                </button>
             </div>
 
             <div class="stats">

@@ -532,6 +532,30 @@ def sem5_data():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/sem6_result")
+def sem6_result():
+    """Render Sem 6 Result page"""
+    return render_template("sem6_result.html")
+
+
+@app.route("/sem6_data")
+def sem6_data():
+    """Serve the Sem 6 results CSV data as JSON"""
+    try:
+        csv_path = os.path.join(os.path.dirname(__file__), "semester_6_all_results.csv")
+        records = []
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Clean up any unnamed index column if present
+                clean_row = {k: v for k, v in row.items() if k and k != ""}
+                records.append(clean_row)
+        return jsonify({"records": records, "total": len(records)})
+    except Exception as e:
+        logger.error(f"Error serving sem6 data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/cp2")
 def cp2():
     """Render CP2 seating and project page"""
