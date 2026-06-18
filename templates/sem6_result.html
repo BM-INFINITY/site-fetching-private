@@ -742,12 +742,12 @@
 
     <script>
         const BASE = 'https://result.ganpatuniversity.ac.in/frmUniResult.aspx';
+        // ddlScheduleExam IDs for Sem 6: CE=17241, IT=17248, CE-AI=17242
+        // CE-IOT and IT-IOT are not available for this schedule
         const BRANCH_PARA = {
-            'COMPUTER ENGINEERING': '1,6,1,{e},16473',
-            'INFORMATION TECHNOLOGY': '1,6,2,{e},16480',
-            'CE-IOT': '18,6,276,{e},16412',
-            'IT-IOT': '18,6,327,{e},16418',
-            'CE-AI': '1,6,239,{e},16474',
+            'COMPUTER ENGINEERING': '1,6,1,{e},17241',
+            'INFORMATION TECHNOLOGY': '1,6,2,{e},17248',
+            'CE-AI': '1,6,239,{e},17242',
         };
 
         function buildUrl(enrollment, branch) {
